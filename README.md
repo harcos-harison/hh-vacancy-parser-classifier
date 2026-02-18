@@ -11,8 +11,7 @@
 - Структура директорий и API функций могут меняться.
 - Некоторые части кода остаются экспериментальными (в т.ч. папка `experiments_page/` и папка `use model/`).
 
-![photo_5233264191454518676_y](https://github.com/user-attachments/assets/6d01d506-c1b6-4a9b-98ce-5b65a7335120)
-![photo_5233264191454518677_y](https://github.com/user-attachments/assets/c948f5f0-3cc6-4d44-92d9-58e92c22d820)
+![photo_5233264191454518676_y](https://github.com/user-attachments/assets/6d01d506-c1b6-4a9b-98ce-5b65a7335120)![photo_5233264191454518677_y](https://github.com/user-attachments/assets/c948f5f0-3cc6-4d44-92d9-58e92c22d820)
 ![photo_5233264191454518678_y](https://github.com/user-attachments/assets/b7529566-d13c-4854-8d1d-a6431f5c75ed)
 ![photo_5233264191454518679_y](https://github.com/user-attachments/assets/165b4ba5-78e3-4dc2-a00d-3df9f5811bf5)
 ![photo_5233264191454518680_y](https://github.com/user-attachments/assets/9cc9dc9b-50fb-458e-a90b-0ff970943c13)
