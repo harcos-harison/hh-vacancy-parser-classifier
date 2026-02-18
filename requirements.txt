@@ -1,3 +1,7 @@
 requests
 torch
 transformers
+pandas
+openpyxl
+beautifulsoup4
+flask

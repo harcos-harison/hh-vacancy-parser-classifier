@@ -17,6 +17,16 @@ env/
 *.json
 *.sqlite3
 
+# Office / binary data exports
+*.xlsx
+*.xls
+~$*.xlsx
+*.docx
+
+# IDE / tools
+.idea/
+.streamlit/
+
 # OS-specific files
 .DS_Store
 Thumbs.db

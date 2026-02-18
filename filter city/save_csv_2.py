@@ -1,5 +1,8 @@
 import requests
 import csv
+import pandas as pd
+import time
+from bs4 import BeautifulSoup
 
 BASE_URL = "https://api.hh.ru/vacancies"
 AREAS_URL = "https://api.hh.ru/areas"
@@ -84,17 +87,51 @@ def get_all_vacancies(text, city_name, per_page=20, max_pages=100):
         all_vacancies.extend(vacancies)
         page += 1
 
+    # Для каждой вакансии попробуем получить полное описание со страницы вакансии
+    headers = {"User-Agent": "HH-Parser/1.0"}
+    for v in all_vacancies:
+        url = v.get("url")
+        if not url:
+            continue
+        try:
+            full_desc = fetch_full_description(url, headers=headers)
+            if full_desc:
+                v["description"] = full_desc
+        except Exception:
+            pass
+        time.sleep(0.2)
+
     return all_vacancies
 
-def save_vacancies_to_csv(vacancies, filename):
+
+def fetch_full_description(url, headers=None, timeout=10):
+    if not url:
+        return ""
+    headers = headers or {"User-Agent": "HH-Parser/1.0"}
+    try:
+        r = requests.get(url, headers=headers, timeout=timeout)
+        r.raise_for_status()
+    except Exception:
+        return ""
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    # Поиск блока описания вакансии
+    block = soup.find("div", {"data-qa": "vacancy-description"})
+    if not block:
+        block = soup.find("div", class_="g-user-content")
+    if not block:
+        return ""
+
+    return block.get_text(separator="\n").strip()
+
+def save_vacancies_to_xlsx(vacancies, filename):
     if not vacancies:
         print("Нет вакансий для сохранения.")
         return
 
-    with open(filename, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=vacancies[0].keys())
-        writer.writeheader()
-        writer.writerows(vacancies)
+    df = pd.DataFrame(vacancies)
+    # Сохраняем в Excel; index=False чтобы не добавлять колонку индекса
+    df.to_excel(filename, index=False)
 
     print(f"Вакансии сохранены в файл: {filename}")
 
@@ -105,7 +142,7 @@ if __name__ == "__main__":
     vacancies = get_all_vacancies(text=text, city_name=city, per_page=20)
 
     total = len(vacancies)
-    print(f"\nНайдено {total} вакансий в {city}\n")
+    
 
     for v in vacancies:
         print("—" * 40)
@@ -115,5 +152,6 @@ if __name__ == "__main__":
         print(f"ЗП: {v['salary_from']} - {v['salary_to']} {v['currency']}")
         print(f"Ссылка: {v['url']}")
         print(f"Описание: {v['description'][:100]}...")  # показываем первые 100 символов
-
-    save_vacancies_to_csv(vacancies, f"vacancies_{city}.csv")
+        
+    print(f"\nНайдено {total} вакансий в {city}\n")
+    save_vacancies_to_xlsx(vacancies, f"vacancies_{city}.xlsx")

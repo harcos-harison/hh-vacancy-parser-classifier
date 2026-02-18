@@ -1,5 +1,8 @@
 import requests
 import csv
+import pandas as pd
+import time
+from bs4 import BeautifulSoup
 
 BASE_URL = "https://api.hh.ru/vacancies"
 AREAS_URL = "https://api.hh.ru/areas"
@@ -51,9 +54,30 @@ def parse_vacancies(data):
             "salary_from": salary["from"] if salary else None,
             "salary_to": salary["to"] if salary else None,
             "currency": salary["currency"] if salary else None,
-            "url": item.get("alternate_url")
+            "url": item.get("alternate_url"),
+            "description": ""
         })
     return vacancies
+
+
+def fetch_full_description(url, headers=None, timeout=10):
+    if not url:
+        return ""
+    headers = headers or {"User-Agent": "HH-Parser/1.0"}
+    try:
+        r = requests.get(url, headers=headers, timeout=timeout)
+        r.raise_for_status()
+    except Exception:
+        return ""
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    block = soup.find("div", {"data-qa": "vacancy-description"})
+    if not block:
+        block = soup.find("div", class_="g-user-content")
+    if not block:
+        return ""
+
+    return block.get_text(separator="\n").strip()
 
 def get_all_vacancies(text, city_name, per_page=20, max_pages=100):
     """Собирает все вакансии по региону и фильтрует по городу"""
@@ -80,18 +104,30 @@ def get_all_vacancies(text, city_name, per_page=20, max_pages=100):
         all_vacancies.extend(vacancies)
         page += 1
 
+    # Попробуем получить полные описания со страниц вакансий
+    headers = {"User-Agent": "HH-Parser/1.0"}
+    for v in all_vacancies:
+        url = v.get("url")
+        if not url:
+            continue
+        try:
+            full_desc = fetch_full_description(url, headers=headers)
+            if full_desc:
+                v["description"] = full_desc
+        except Exception:
+            pass
+        time.sleep(0.2)
+
     return all_vacancies
 
-def save_vacancies_to_csv(vacancies, filename):
-    """Сохраняет список вакансий в CSV"""
+def save_vacancies_to_xlsx(vacancies, filename):
+    """Сохраняет список вакансий в XLSX"""
     if not vacancies:
         print("Нет вакансий для сохранения.")
         return
 
-    with open(filename, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=vacancies[0].keys())
-        writer.writeheader()
-        writer.writerows(vacancies)
+    df = pd.DataFrame(vacancies)
+    df.to_excel(filename, index=False)
 
     print(f"Вакансии сохранены в файл: {filename}")
 
@@ -113,5 +149,5 @@ if __name__ == "__main__":
         print(f"ЗП: {v['salary_from']} - {v['salary_to']} {v['currency']}")
         print(f"Ссылка: {v['url']}")
 
-    # Сохраняем в CSV
-    save_vacancies_to_csv(vacancies, f"vacancies_{city}.csv")
+    # Сохраняем в XLSX
+    save_vacancies_to_xlsx(vacancies, f"vacancies_{city}.xlsx")
